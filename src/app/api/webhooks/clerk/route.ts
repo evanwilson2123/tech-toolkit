@@ -1,4 +1,5 @@
 import { clerkClient } from "@clerk/nextjs/server";
+import User from "@/models/user";
 import { WebhookEvent } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
 import { Webhook } from "svix";
@@ -79,11 +80,15 @@ export async function POST(req: Request) {
         clerkId: id,
         email: email_addresses[0].email_address,
       };
+      const newUser = new User({
+        clerkId: id,
+        email: email_addresses[0].email_address,
+      });
       console.log("user", user);
 
-      const newUser = await createUser(user);
+      //   const newUser = await createUser(user);
 
-      console.log("newUser", newUser);
+      //   console.log("newUser", newUser);
 
       if (newUser) {
         return NextResponse.json({ message: "New user Created", status: 200 });
