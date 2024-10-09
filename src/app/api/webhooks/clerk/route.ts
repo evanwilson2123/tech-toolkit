@@ -72,6 +72,9 @@ export async function POST(req: Request) {
 
     if (eventType === "user.created") {
       const { id, email_addresses } = evt.data;
+      if (!id || !email_addresses) {
+        return new Response("No ID or email", { status: 400 });
+      }
       const user = {
         clerkId: id,
         email: email_addresses[0].email_address,
