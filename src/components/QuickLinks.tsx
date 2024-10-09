@@ -99,6 +99,12 @@ const QuickLinks: React.FC<QuickLinksProps> = ({
             <button
               onClick={() => window.open(link, "_blank", "noopener,noreferrer")}
               className="bg-techButton text-white px-4 py-2 rounded-md hover:bg-blue-500 transition-all text-left flex-grow"
+              style={{
+                whiteSpace: "nowrap", // Prevent wrapping
+                overflow: "hidden", // Hide overflow
+                textOverflow: "ellipsis", // Show ellipsis
+                maxWidth: "90%", // Adjust as needed to fit inside the container
+              }}
             >
               {link}
             </button>

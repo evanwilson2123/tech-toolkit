@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     user.toolkits.push(toolkit._id);
     await user.save();
     return NextResponse.json(
-      { message: "toolkit saved succesfully" },
+      { message: "toolkit saved succesfully", toolkits: toolkit },
       { status: 200 }
     );
   } catch (error: any) {
@@ -61,7 +61,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "No toolkits found" });
     }
 
-    return NextResponse.json({ toolkits }, { status: 200 });
+    return NextResponse.json(
+      { toolkits: toolkits, lastOn: user.lastOn },
+      { status: 200 }
+    );
   } catch (error: any) {
     console.error("Error in GET handler:", error);
     return NextResponse.json(

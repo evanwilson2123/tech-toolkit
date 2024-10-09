@@ -23,7 +23,7 @@ const App: React.FC = () => {
   const [showToolkitForm, setShowToolkitForm] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  // Fetch toolkits only once when the component mounts
+  // Fetch toolkits once when the component mounts
   useEffect(() => {
     const fetchToolkits = async () => {
       try {
@@ -33,9 +33,13 @@ const App: React.FC = () => {
         if (data.toolkits && data.toolkits.length > 0) {
           setToolkits(data.toolkits);
 
-          // Only set the current toolkit if it has not been set already
+          // Only set currentToolkit if it's not already set
           if (!currentToolkit) {
-            setCurrentToolkit(data.toolkits[0]);
+            const lastUsedToolkit = data.toolkits.find(
+              (toolkit: Toolkit) =>
+                toolkit._id.toString() === data.lastOn.toString()
+            );
+            setCurrentToolkit(lastUsedToolkit || data.toolkits[0]);
           }
         } else {
           setStatusMessage("No toolkits found.");
@@ -46,21 +50,21 @@ const App: React.FC = () => {
       }
     };
 
-    // Fetch toolkits if none are loaded
     if (toolkits.length === 0) {
       fetchToolkits();
     }
-    setLastToolKit();
-  }, [toolkits.length, currentToolkit]); // Dependency array to prevent re-runs
+  }, [toolkits.length, currentToolkit]);
 
-  const setLastToolKit = async () => {
-    await fetch(`/api/lastOn`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ id: currentToolkit?._id }),
-    });
+  const setLastToolKit = async (toolkit: Toolkit) => {
+    if (currentToolkit) {
+      await fetch(`/api/lastOn`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: toolkit._id }),
+      });
+    }
   };
 
   // Handle toolkit selection from the dropdown
@@ -71,9 +75,9 @@ const App: React.FC = () => {
       (toolkit) => toolkit._id === event.target.value
     );
     if (selectedToolkit && selectedToolkit !== currentToolkit) {
-      setCurrentToolkit(selectedToolkit); // Only set if the toolkit is different
+      setCurrentToolkit(selectedToolkit);
     }
-    setLastToolKit();
+    if (selectedToolkit) setLastToolKit(selectedToolkit);
   };
 
   const addNewToolkit = useCallback(async () => {
@@ -90,26 +94,30 @@ const App: React.FC = () => {
           body: JSON.stringify({ name: newToolkitName }),
         });
 
+        if (!response.ok) {
+          throw new Error("Failed to add toolkit.");
+        }
+
         const data = await response.json();
 
         // Ensure toolkit is valid before adding
-        if (data.toolkit && data.toolkit._id) {
-          setToolkits((prevToolkits) => [...prevToolkits, data.toolkit]);
-          setCurrentToolkit(data.toolkit); // Automatically select the new toolkit
+        if (data.toolkits && data.toolkits._id) {
+          setToolkits((prevToolkits) => [...prevToolkits, data.toolkits]);
+          setCurrentToolkit(data.toolkits);
+          setLastToolKit(data.toolkits);
           setStatusMessage("Toolkit added successfully!");
+
+          setTimeout(() => setStatusMessage(null), 3000);
         } else {
           throw new Error("Invalid toolkit data");
         }
       } catch (error) {
-        setStatusMessage("Failed to add toolkit.");
         console.error("Error adding toolkit:", error);
+        setStatusMessage("Failed to add toolkit.");
       }
 
       setNewToolkitName("");
       setShowToolkitForm(false);
-
-      // Clear status message after 3 seconds
-      setTimeout(() => setStatusMessage(null), 3000);
     }
   }, [newToolkitName, toolkits]);
 
@@ -127,13 +135,12 @@ const App: React.FC = () => {
               Select a toolkit
             </option>
             {toolkits.length > 0 &&
-              toolkits.map(
-                (toolkit) =>
-                  toolkit && toolkit._id ? (
-                    <option key={toolkit._id} value={toolkit._id}>
-                      {toolkit.name}
-                    </option>
-                  ) : null // Ensure that undefined toolkits don't cause errors
+              toolkits.map((toolkit) =>
+                toolkit && toolkit._id ? (
+                  <option key={toolkit._id} value={toolkit._id}>
+                    {toolkit.name}
+                  </option>
+                ) : null
               )}
           </select>
           <button
