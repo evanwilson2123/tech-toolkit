@@ -22,6 +22,8 @@ const App: React.FC = () => {
   const [newToolkitName, setNewToolkitName] = useState("");
   const [showToolkitForm, setShowToolkitForm] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] =
+    useState<Toolkit | null>(null); // Track the toolkit to delete
 
   // Fetch toolkits once when the component mounts
   useEffect(() => {
@@ -121,6 +123,50 @@ const App: React.FC = () => {
     }
   }, [newToolkitName, toolkits]);
 
+  // Confirm deletion of toolkit
+  const confirmDeleteToolkit = (toolkit: Toolkit) => {
+    setShowDeleteConfirmation(toolkit); // Open delete confirmation modal
+  };
+
+  // Delete the toolkit after confirmation
+  const deleteToolkit = async () => {
+    if (showDeleteConfirmation) {
+      try {
+        const response = await fetch(`/api/toolkit`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ id: showDeleteConfirmation._id }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to delete toolkit.");
+        }
+
+        // Remove the toolkit from the state
+        const updatedToolkits = toolkits.filter(
+          (toolkit) => toolkit._id !== showDeleteConfirmation._id
+        );
+        setToolkits(updatedToolkits);
+
+        // Set the next available toolkit or null if none
+        setCurrentToolkit(updatedToolkits[0] || null);
+
+        setStatusMessage("Toolkit deleted successfully!");
+
+        // Clear message after 3 seconds
+        setTimeout(() => setStatusMessage(null), 3000);
+      } catch (error) {
+        console.error("Error deleting toolkit:", error);
+        setStatusMessage("Failed to delete toolkit.");
+      }
+
+      // Close the delete confirmation modal
+      setShowDeleteConfirmation(null);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-techBg text-white font-mono">
       <header className="flex items-center justify-between p-4 bg-gray-900 shadow-md">
@@ -195,6 +241,18 @@ const App: React.FC = () => {
               />
             </>
           )}
+
+          {/* Delete Toolkit Button */}
+          {currentToolkit && (
+            <div className="mt-4">
+              <button
+                onClick={() => confirmDeleteToolkit(currentToolkit)}
+                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-shadow"
+              >
+                Delete Toolkit
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Main content with consistent dark theme */}
@@ -204,6 +262,34 @@ const App: React.FC = () => {
           <Contacts />
         </div>
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded shadow-md text-white">
+            <h2 className="text-xl mb-4">Confirm Deletion</h2>
+            <p>
+              Are you sure you want to delete the toolkit{" "}
+              <strong>{showDeleteConfirmation.name}</strong>? This action cannot
+              be undone.
+            </p>
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => setShowDeleteConfirmation(null)}
+                className="bg-gray-600 text-white px-4 py-2 rounded-md mr-4"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={deleteToolkit}
+                className="bg-red-600 text-white px-4 py-2 rounded-md"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
