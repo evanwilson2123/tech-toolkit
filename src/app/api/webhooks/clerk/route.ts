@@ -80,16 +80,16 @@ export async function POST(req: Request) {
         clerkId: id,
         email: email_addresses[0].email_address,
       };
-      const newUser = new User({
-        clerkId: id,
-        email: email_addresses[0].email_address,
-      });
-      await newUser.save();
+      //   const newUser = new User({
+      //     clerkId: id,
+      //     email: email_addresses[0].email_address,
+      //   });
+      //   await newUser.save();
       console.log("user", user);
 
-      //   const newUser = await createUser(user);
+      const newUser = await createUser(user);
 
-      //   console.log("newUser", newUser);
+      console.log("newUser", newUser);
 
       if (newUser) {
         return NextResponse.json({ message: "New user Created", status: 200 });
