@@ -188,7 +188,11 @@ const App: React.FC = () => {
                 toolkitId={currentToolkit._id}
                 currentToolkitLinks={currentToolkit.quickLinks as string[]}
               />
-              <DocumentationLinks currentToolkit={currentToolkit.name} />
+              <DocumentationLinks
+                currentToolkit={currentToolkit.name}
+                toolkitId={currentToolkit._id}
+                currentToolkitLinks={currentToolkit.docLinks as string[]}
+              />
             </>
           )}
         </div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import User from "@/models/user";
+import { connectDB } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   const { id } = await req.json();
@@ -8,6 +9,7 @@ export async function POST(req: NextRequest) {
   if (!userId) {
     return NextResponse.json({ error: "Invalid auth" }, { status: 400 });
   }
+  await connectDB();
   const user = await User.findOne({ clerkId: userId });
   if (!user) {
     return NextResponse.json({ error: "user not found" }, { status: 404 });
