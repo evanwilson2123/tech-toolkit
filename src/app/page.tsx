@@ -5,61 +5,113 @@ import Contacts from "@/components/Contacts";
 import DocumentationLinks from "@/components/DocumentationLinks";
 import Notes from "@/components/Notes";
 import QuickLinks from "@/components/QuickLinks";
-import React, { useState, useEffect } from "react";
-import { useAuthFetch } from "@/hooks/privateFetch";
+import React, { useState, useEffect, useCallback } from "react";
+
+interface Toolkit {
+  _id: string;
+  name: string;
+  quickLinks?: string[];
+  docLinks?: string[];
+  notes?: string;
+  contacts?: string[];
+}
 
 const App: React.FC = () => {
-  const authFetch = useAuthFetch();
-  const [currentToolkit, setCurrentToolkit] = useState("Default Toolkit");
-  const [toolkits, setToolkits] = useState<string[]>([]);
+  const [currentToolkit, setCurrentToolkit] = useState<Toolkit | null>(null);
+  const [toolkits, setToolkits] = useState<Toolkit[]>([]);
   const [newToolkitName, setNewToolkitName] = useState("");
   const [showToolkitForm, setShowToolkitForm] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null); // For showing status messages
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  // Fetch toolkits from the endpoint
+  // Fetch toolkits only once when the component mounts
   useEffect(() => {
     const fetchToolkits = async () => {
       try {
-        const response = await authFetch(`/toolkit`, { method: "GET" });
+        const response = await fetch(`/api/toolkit`, { method: "GET" });
         const data = await response.json();
-        if (response.ok) {
-          setToolkits(data.toolkits || []);
+
+        if (data.toolkits && data.toolkits.length > 0) {
+          setToolkits(data.toolkits);
+
+          // Only set the current toolkit if it has not been set already
+          if (!currentToolkit) {
+            setCurrentToolkit(data.toolkits[0]);
+          }
         } else {
-          setStatusMessage("Failed to fetch toolkits.");
+          setStatusMessage("No toolkits found.");
         }
       } catch (error) {
         setStatusMessage("Error fetching toolkits.");
+        console.error("Fetch toolkits error:", error);
       }
     };
 
-    fetchToolkits();
-  }, [authFetch]);
+    // Fetch toolkits if none are loaded
+    if (toolkits.length === 0) {
+      fetchToolkits();
+    }
+    setLastToolKit();
+  }, [toolkits.length, currentToolkit]); // Dependency array to prevent re-runs
 
-  const addNewToolkit = async () => {
-    if (newToolkitName && !toolkits.includes(newToolkitName)) {
+  const setLastToolKit = async () => {
+    await fetch(`/api/lastOn`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id: currentToolkit?._id }),
+    });
+  };
+
+  // Handle toolkit selection from the dropdown
+  const handleToolkitSelection = (
+    event: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const selectedToolkit = toolkits.find(
+      (toolkit) => toolkit._id === event.target.value
+    );
+    if (selectedToolkit && selectedToolkit !== currentToolkit) {
+      setCurrentToolkit(selectedToolkit); // Only set if the toolkit is different
+    }
+    setLastToolKit();
+  };
+
+  const addNewToolkit = useCallback(async () => {
+    if (
+      newToolkitName &&
+      !toolkits.some((toolkit) => toolkit.name === newToolkitName)
+    ) {
       try {
-        const response = await authFetch(`/toolkit`, {
+        const response = await fetch(`/api/toolkit`, {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({ name: newToolkitName }),
         });
 
-        if (response.ok) {
-          setToolkits([...toolkits, newToolkitName]);
+        const data = await response.json();
+
+        // Ensure toolkit is valid before adding
+        if (data.toolkit && data.toolkit._id) {
+          setToolkits((prevToolkits) => [...prevToolkits, data.toolkit]);
+          setCurrentToolkit(data.toolkit); // Automatically select the new toolkit
           setStatusMessage("Toolkit added successfully!");
         } else {
-          setStatusMessage("Failed to add toolkit.");
+          throw new Error("Invalid toolkit data");
         }
       } catch (error) {
-        setStatusMessage("Error adding toolkit.");
+        setStatusMessage("Failed to add toolkit.");
+        console.error("Error adding toolkit:", error);
       }
 
-      setNewToolkitName(""); // Clear the input field after submission
-      setShowToolkitForm(false); // Hide the form after adding the toolkit
+      setNewToolkitName("");
+      setShowToolkitForm(false);
 
       // Clear status message after 3 seconds
       setTimeout(() => setStatusMessage(null), 3000);
     }
-  };
+  }, [newToolkitName, toolkits]);
 
   return (
     <div className="flex flex-col h-screen bg-techBg text-white font-mono">
@@ -67,15 +119,22 @@ const App: React.FC = () => {
         <h1 className="text-2xl tracking-wide font-semibold">Tech Toolkit</h1>
         <div className="flex items-center space-x-4">
           <select
-            value={currentToolkit}
-            onChange={(e) => setCurrentToolkit(e.target.value)}
+            value={currentToolkit?._id || ""}
+            onChange={handleToolkitSelection}
             className="bg-gray-700 text-white p-2 rounded border-2 border-techAccent focus:border-techButton"
           >
-            {toolkits.map((toolkit) => (
-              <option key={toolkit} value={toolkit}>
-                {toolkit}
-              </option>
-            ))}
+            <option value="" disabled>
+              Select a toolkit
+            </option>
+            {toolkits.length > 0 &&
+              toolkits.map(
+                (toolkit) =>
+                  toolkit && toolkit._id ? (
+                    <option key={toolkit._id} value={toolkit._id}>
+                      {toolkit.name}
+                    </option>
+                  ) : null // Ensure that undefined toolkits don't cause errors
+              )}
           </select>
           <button
             onClick={() => setShowToolkitForm(!showToolkitForm)}
@@ -115,8 +174,16 @@ const App: React.FC = () => {
       <main className="flex flex-grow">
         {/* Sidebar with consistent dark color */}
         <div className="w-1/4 bg-gray-900 p-4">
-          <QuickLinks currentToolkit={currentToolkit} />
-          <DocumentationLinks currentToolkit={currentToolkit} />
+          {currentToolkit && (
+            <>
+              <QuickLinks
+                currentToolkit={currentToolkit.name}
+                toolkitId={currentToolkit._id}
+                currentToolkitLinks={currentToolkit.quickLinks as string[]}
+              />
+              <DocumentationLinks currentToolkit={currentToolkit.name} />
+            </>
+          )}
         </div>
 
         {/* Main content with consistent dark theme */}
