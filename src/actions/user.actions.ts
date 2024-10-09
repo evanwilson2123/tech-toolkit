@@ -5,7 +5,7 @@ export const createUser = async (user: any) => {
   try {
     await connectDB();
     const newUser = new User({
-      clerkId: user.id,
+      clerkId: user.clerkId,
       email: user.email,
     });
     await newUser.save();
