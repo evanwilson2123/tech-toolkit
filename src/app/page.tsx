@@ -259,7 +259,13 @@ const App: React.FC = () => {
         <div className="flex flex-col w-3/4 p-4 space-y-4 bg-techBg">
           <Chatbot />
           <Notes />
-          <Contacts />
+          {currentToolkit && currentToolkit.contacts && (
+            <Contacts
+              currentToolkit={currentToolkit?.name}
+              toolkitId={currentToolkit._id}
+              currentToolkitContacts={currentToolkit.contacts}
+            />
+          )}
         </div>
       </main>
 
