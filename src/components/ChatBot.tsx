@@ -17,7 +17,7 @@ const Chatbot: React.FC = () => {
     // Add the user's message to the conversation
     setMessages((prevMessages) => [
       ...prevMessages,
-      { type: "user", content: [<p key={Date.now()}>{message}</p>] },
+      { type: "user", content: [<p key={Date.now()}>{message}</p>] }, // Add unique key using Date.now()
     ]);
 
     setLoading(true);
@@ -37,19 +37,25 @@ const Chatbot: React.FC = () => {
         // Add bot's response to the conversation
         setMessages((prevMessages) => [
           ...prevMessages,
-          { type: "bot", content: formattedResponse },
+          { type: "bot", content: formattedResponse }, // Bot's response with properly formatted content
         ]);
       } else {
         setMessages((prevMessages) => [
           ...prevMessages,
-          { type: "bot", content: [<p>Error: Unable to get a response.</p>] },
+          {
+            type: "bot",
+            content: [<p key={Date.now()}>Error: Unable to get a response.</p>],
+          },
         ]);
       }
     } catch (error) {
       console.error(error);
       setMessages((prevMessages) => [
         ...prevMessages,
-        { type: "bot", content: [<p>Error: Unable to get a response.</p>] },
+        {
+          type: "bot",
+          content: [<p key={Date.now()}>Error: Unable to get a response.</p>],
+        },
       ]);
     } finally {
       setLoading(false);
@@ -65,7 +71,7 @@ const Chatbot: React.FC = () => {
         const codeContent = section.slice(3, -3); // Remove ``` around code
         return (
           <pre
-            key={index}
+            key={`code-${index}`} // Unique key for each code block
             className="bg-gray-900 p-3 rounded-md overflow-x-auto"
           >
             <code className="text-blue-400">{codeContent}</code>
@@ -75,7 +81,7 @@ const Chatbot: React.FC = () => {
         // Escape any HTML-like tags so they render as text
         const escapedText = section.replace(/</g, "&lt;").replace(/>/g, "&gt;");
         return (
-          <p key={index} className="mb-2">
+          <p key={`text-${index}`} className="mb-2">
             {escapedText}
           </p>
         );
@@ -91,7 +97,7 @@ const Chatbot: React.FC = () => {
         {/* Display all messages */}
         {messages.map((msg, idx) => (
           <div
-            key={idx}
+            key={idx} // Ensure each message has a unique key
             className={`mb-4 p-4 rounded-lg ${
               msg.type === "user" ? "bg-blue-600 text-right" : "bg-gray-700"
             }`}

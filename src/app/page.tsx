@@ -121,7 +121,7 @@ const App: React.FC = () => {
       setNewToolkitName("");
       setShowToolkitForm(false);
     }
-  }, [newToolkitName, toolkits]);
+  }, [newToolkitName, toolkits, setLastToolKit]);
 
   // Confirm deletion of toolkit
   const confirmDeleteToolkit = (toolkit: Toolkit) => {
