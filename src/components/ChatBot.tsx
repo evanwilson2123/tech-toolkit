@@ -90,8 +90,12 @@ const Chatbot: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-800 rounded shadow-md transition-all hover:shadow-lg">
-      <div className="flex-grow overflow-y-auto p-4">
+    <div className="flex flex-col bg-gray-800 rounded shadow-md transition-all hover:shadow-lg">
+      {/* Scrollable message container */}
+      <div
+        className="flex-grow overflow-y-auto p-4"
+        style={{ maxHeight: "400px" }} // Fixed height to ensure the size doesn't grow
+      >
         <h2 className="text-xl font-semibold mb-4 text-techAccent">Chatbot</h2>
 
         {/* Display all messages */}
