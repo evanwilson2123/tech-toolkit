@@ -258,7 +258,7 @@ const App: React.FC = () => {
         {/* Main content with consistent dark theme */}
         <div className="flex flex-col w-3/4 p-4 space-y-4 bg-techBg">
           <Chatbot />
-          <Notes />
+          {currentToolkit && <Notes toolkitId={currentToolkit._id} />}
           {currentToolkit && currentToolkit.contacts && (
             <Contacts
               currentToolkit={currentToolkit?.name}
